@@ -1,0 +1,4 @@
+*.ipynb
+*.png
+test.py
+__pycache__/
