@@ -66,7 +66,6 @@ def perpendicular_bisector(p1, p2, xmin, xmax, ymin, ymax):
 	else:
 
 		b = find_b(m_p, m)
-		print('b', b)
 
 		x_small = xmin - 2
 		x_large = xmax + 2
@@ -77,9 +76,6 @@ def perpendicular_bisector(p1, p2, xmin, xmax, ymin, ymax):
 		p_r1 = (x_small - 1, y_r1)
 		y_r2 = m*(x_large+1) + b
 		p_r2 = (x_large + 1, y_r2)
-
-	print(p_r1)
-	print(p_r2)
 
 	return p_r1, p_r2
 
