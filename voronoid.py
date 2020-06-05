@@ -148,7 +148,7 @@ def voronoid(points):
 
 
 if __name__ == '__main__':
-    points = [(0, 1), (1, 8), (9,0)]
+    points = [(0, 1), (1, 8), (9,0), (2, 3), (1,3)]
     
     voronoid(points)
 

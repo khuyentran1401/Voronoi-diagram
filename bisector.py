@@ -31,18 +31,22 @@ def slope(p1, p2):
 
 	# If the slope is vertical
 	if p2[0] == p1[0]:
-		return 1
+		return 'undefined'
 	return (p2[1] - p1[1])/(p2[0] - p1[0])
 
 
 def slope_perpendicular_bisector(p1, p2):
+		
+	#print(p1, p2)
 
-	# If the slope is horizontal
+	# If the line is horizontal
 	if p2[0] == p1[0]:
 		return 0
 	
 	if p2[1] == p1[1]:
-		return 1
+		#print('Vertical')
+		return 'undefined'
+		# 
 	return -((p2[0] - p1[0])/(p2[1] - p1[1]))
 
 
@@ -55,10 +59,10 @@ def perpendicular_bisector(p1, p2, xmin, xmax, ymin, ymax):
 	m_p = midpoint(p1, p2)
 	#print('m_p', m_p)
 
-	if m == 1:
-		p_r1 = (m_p[0], ymin-2)
-		p_r2 = (m_p[0], ymax+2)
-	
+	if m == 'undefined':
+		p_r1 = (m_p[0], ymin-2 )
+		p_r2 = (m_p[0], ymax+2 )
+			
 	elif m == 0:
 		p_r1 = (xmin-2, m_p[1])
 		p_r2 = (xmax+2, m_p[1])
@@ -78,47 +82,52 @@ def perpendicular_bisector(p1, p2, xmin, xmax, ymin, ymax):
 		p_r2 = (x_large + 1, y_r2)
 
 	return p_r1, p_r2
-
-
+	
 def intersection(p1, q1, p2, q2, shift=None):
-    	
-	#print(p1, q1)
+		
+	print(p1, q1)
 
 	m1 = slope(p1, q1)
 	if shift:
 		m1 -= shift
 		
-	#print('m1',m1)
+	print('m1',m1)
 
-	#print(p2, q2)
+	print(p2, q2)
 
 	m2 = slope(p2, q2)
-	#print('m2', m2)
+	print('m2', m2)
 
-	b1 = find_b(p1, m1)
-	b2 = find_b(p2, m2)
+	if m1 != 'undefined':
+		b1 = find_b(p1, m1)
+	if m2 != 'undefined':
+		b2 = find_b(p2, m2)
 
 	# If the line is vertical, we take the x of the point to be b
 
-	if m1 == 1 and m2 == 0:
+	if m1 == 'undefined' and m2 == 0:
 		x = p1[0]
 		y = p2[1]
 		
-
-	elif m2 == 1 and m1 == 0:
+	elif m2 == 'undefined' and m1 == 0:
 		x = p2[0]
 		y = p1[1]
+		#print('sth')
 
-	elif m1 == 1:
+	elif m1 == 'undefined':
 		x = p1[0]
 		y = m2*x+b2
+		#print('sth')
 
-	elif m2 == 1:
+	elif m2 == 'undefined':
 		x = p2[0]
 		y = m1*x+b1
+		
 
 	else:
+		#print('sth')
 		x = (b2-b1)/(m1-m2)
+	
 		y = m1*x+b1
 
 	return (x, y)

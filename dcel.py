@@ -22,27 +22,39 @@ class Vertex:
 	def sortincident(self):
 		self.hedgelist.sort(key=lambda h: h.angle)
 
-	def sortthree(self, h1=None):
+	def sortthree(self, h1, new_site, close_site):
 		
 
 		if h1 not in self.hedgelist:
 			h1 = h1.twin
 		print(h1)
 		self.hedgelist.remove(h1)
+		compare_hedge = self.hedgelist[:]
 
-		# Determines if a point is to the left of a hedge
-		for h in self.hedgelist:
-			print('left or right', h1, h, h.v1.coord)
-			if is_left(h1, h):
-				left = h
-				print('left', left)
+		# Determines if a point is to the right of a hedge
+		belong = siteBelong(new_site, close_site,
+					  self.hedgelist[0], self.hedgelist[1])
+		non_relevant_hedge = False
+		
+		for i, h in enumerate(compare_hedge):
+			site = belong[h]
+			#if h.newface == None or h.newface.site == site:
+    			
+			if not lefton(h, site):
+				print('right', h)
+				print('face', h.newface)
+				right = h
 				self.hedgelist.remove(h)
-			else:
-				print('not left', h)
-			
+			#else:
+			#	print('non_relevant_hedge', h)
+			#	print('face', h.newface)
+			#	non_relevant_hedge = True
+    		
 
 		self.hedgelist.insert(0, h1)
-		self.hedgelist.insert(1, left)
+		self.hedgelist.insert(1, right)
+		if non_relevant_hedge:
+			self.hedgelist.append(non_relevant_hedge)
 
 		#self.hedgelist[1:].sort(key=lambda h: h.angle)
 
@@ -318,9 +330,9 @@ class Dcel(Xygraph):
 					if ver != v:
 						self.vertices.remove(ver)
 
-				#print('delete', deletehedge)
-				#print('head', deletehedge.twin.nexthedge)
-				#print('tail', deletehedge.prevhedge)
+				print('delete', deletehedge)
+				print('head', deletehedge.twin.nexthedge)
+				print('tail', deletehedge.prevhedge)
 				head = deletehedge.twin.nexthedge
 				tail = deletehedge.prevhedge
 
@@ -328,8 +340,8 @@ class Dcel(Xygraph):
 				merge_hedge2 = Hedge(head.origin, tail.v1)
 				merge_hedge1.twin = merge_hedge2
 				merge_hedge2.twin = merge_hedge1
-				#print('new hedge', merge_hedge1)
-				#print('twin', merge_hedge2)
+				print('new hedge', merge_hedge1)
+				print('twin', merge_hedge2)
 
 				head.origin.hedgelist.remove(head)
 				head.origin.hedgelist.append(merge_hedge1)
@@ -339,12 +351,12 @@ class Dcel(Xygraph):
 				head.nexthedge.prevhedge = merge_hedge1
 				merge_hedge1.nexthedge = head.nexthedge
 
-				#print('cur', merge_hedge1)
-				#print('next', merge_hedge1.nexthedge)
+				print('cur', merge_hedge1)
+				print('next', merge_hedge1.nexthedge)
 
 				tail.prevhedge.nexthedge = merge_hedge1
 				merge_hedge1.prevhedge = tail.prevhedge
-				#print('prev', merge_hedge1.prevhedge)
+				print('prev', merge_hedge1.prevhedge)
 
 			else:
 				# Append the new merge point to the intersect if the old hedge is on the intersect hedge
@@ -420,22 +432,25 @@ class Dcel(Xygraph):
 					for h in v.hedgelist:
 						print(h)
 
-					v.sortthree(hb1)
+					v.sortthree(hb1, new_site, close_site)
 				else:
 					for h in v.hedgelist:
 						if h in new_hedges:
-							v.sortthree(h)
+							v.sortthree(h, new_site, close_site)
 
 				v.hedgelist[0].nexthedge = v.hedgelist[1].twin
-				# print('cur',v.hedgelist[0])
-				# print('next',v.hedgelist[0].nexthedge)
+				print('cur',v.hedgelist[0])
+				print('next',v.hedgelist[0].nexthedge)
 
 				v.hedgelist[1].twin.prevhedge = v.hedgelist[0]
 
+				#if len(v.hedgelist) == 2 or len(v.hedgelist) == 3:
 				v.hedgelist[0].twin.prevhedge = v.hedgelist[2]
 				v.hedgelist[2].nexthedge = v.hedgelist[0].twin
-				#print('cur', v.hedgelist[2])
-				#print('next', v.hedgelist[2].nexthedge)
+				print('cur', v.hedgelist[2])
+				print('next', v.hedgelist[2].nexthedge)
+				#else:
+				#	v.hedgelist.pop()
 
 		# Step 4: Face assignment
 		belong = siteBelong(new_site, close_site,
@@ -469,7 +484,8 @@ class Dcel(Xygraph):
 			print(h)
 			f.vertices.append(h.origin)
 
-			while (not h.nexthedge is f.wedge):
+			i = 0 
+			while (not h.nexthedge is f.wedge) and i <7:
 
 				h = h.nexthedge
 				f.vertices.append(h.origin)
@@ -477,11 +493,11 @@ class Dcel(Xygraph):
 				f.hedges.append(h)
 				print('next:', h)
 				h.newface = f
+				i += 1
 
 		# Return the hedge that is not the border
 
 		return {v: h for v, h in intersect_edges.items() if not isborder(self.border, h) and h != intersected_hed}
-
 	def findpoints(self, pl, onetoone=False):
 		"""Given a list of points pl, returns a list of
 		with the corresponding newface each point belongs to and
@@ -586,12 +602,9 @@ def split_hedge(v, hedge):
 	return htail1, htail2, horigin1, horigin2
 
 
-# Python3 implementation of the approach
-
-# Function to return the minimum distance
-# between a line segment AB and a point E
-
 def minDistance(A, B, E):
+	'''Function to return the minimum distance
+ between a line segment AB and a point E'''
 
 	# vector AB
 	AB = [None, None]
@@ -762,18 +775,19 @@ def angle(v1, v2):
 	cos = dot(v1, v2)/(v1_norm*v2_norm)
 	return np.arccos(cos)
 
-def is_left(h1, h2):
-	left = False
-	v1 = toVec(h1.origin.coord, h1.v1.coord)
-	v2 = toVec(h2.origin.coord, h2.v1.coord)
-
-	print('angle',angle(v1, v2))
+def is_right(h1, h2):
+	right = False
+	v1 = toVec(h1.v1.coord, h1.origin.coord)
+	v2 = toVec(h2.v1.coord, h2.origin.coord)
+	dotprod = dot(v1, v2)
+	print(dotprod)
+	if dotprod > 0:
+		right = True 
+	return right
+			
+			
 	
-	if angle(v1, v2) < 180:
-		left = True 
-
-	return left 
-
+	
 	
 		
 
