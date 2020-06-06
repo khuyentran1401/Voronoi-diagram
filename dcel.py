@@ -314,6 +314,16 @@ class Dcel(Xygraph):
 				deletehedge = todelete_hedge(
 					to_compare[0], to_compare[1], close_site)
 				delete_hedges.append(deletehedge)
+
+				# Link between the last hedge to the new cut hedge
+				for h in to_compare:
+					if h != deletehedge:
+						intersected_hed.prevhedge.nexthedge = h 
+						h.prevhedge = intersected_hed.prevhedge
+						print('cur', intersected_hed.prevhedge)
+						print('next', intersected_hed.prevhedge.nexthedge)
+
+
 				for ver in deletehedge.vertices:
 					if ver != v:
 						self.vertices.remove(ver)
@@ -513,7 +523,7 @@ class Dcel(Xygraph):
 			f.vertices.append(h.origin)
 
 			i = 0 
-			while (not h.nexthedge is f.wedge) and i <7:
+			while (not h.nexthedge is f.wedge):
 
 				h = h.nexthedge
 				f.vertices.append(h.origin)
