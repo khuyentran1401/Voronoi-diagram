@@ -23,33 +23,14 @@ class Vertex:
 		self.hedgelist.sort(key=lambda h: h.angle)
 
 	def sortthree(self, new_site, close_site, h1=None):
-			
-		nonrelevant = None
-		if not h1:
-			for h in self.hedgelist:
-				site = siteClose(new_site, close_site, h)
-				print('new face',h,  h.newface)
-				if h.newface != None and h.newface.site != site:
-					print('non relevant edge', h)
-					nonrelevant = h
-					self.hedgelist.remove(nonrelevant)
-			if nonrelevant == None:
-				for h in self.hedgelist:
-					site = siteClose(new_site, close_site, h.twin)
-					print('new face', h.twin,  h.twin.newface)
-					if h.twin.newface != None and h.twin.newface.site != site:
-						print('non relevant edge', h)
-						nonrelevant = h
-						self.hedgelist.remove(nonrelevant)
-
-					
-		else:
+		if h1:
 			if h1 not in self.hedgelist:
 				h1 = h1.twin
 			print(h1)
-			self.hedgelist.remove(h1)
-
+		
 		compare_hedge = self.hedgelist[:]
+		if h1:
+			compare_hedge.remove(h1)
 
 		# Determines if a point is to the right of a hedge
 		
@@ -58,27 +39,11 @@ class Vertex:
 			site = siteClose(new_site, close_site, h)
 			#if h.newface == None or h.newface.site == site:
 				
-			if not lefton(h, site):
-				print('right', h)
-				print('twin', h.twin)
-				print('face', h.newface)
-				right = h
+			if  lefton(h, site):
 				self.hedgelist.remove(h)
+				self.hedgelist.insert(0, h)
 			
-				#	
 				
-		if h1:
-			self.hedgelist.insert(0, h1)
-			self.hedgelist.insert(1, right)
-		else:
-			self.hedgelist.append(right)
-			self.hedgelist.append(nonrelevant)
-			self.hedgelist.append(True)
-		
-		#if non_relevant_hedge:
-		#	self.hedgelist.append(non_relevant_hedge)
-
-		#self.hedgelist[1:].sort(key=lambda h: h.angle)
 
 	def __str__(self):
 		return '({}, {})'.format(self.x, self.y)
@@ -460,57 +425,53 @@ class Dcel(Xygraph):
 					for h in v.hedgelist:
 						if h in new_hedges:
 							v.sortthree(new_site, close_site)
-					print('After sort')
-					for h in v.hedgelist:
-							print(h)
+				print('After sort')
+				for h in v.hedgelist:
+					print(h)
+				pivothedge = v.hedgelist[0]
+				print('pivothedge', pivothedge)
+				p = pivothedge.origin.coord
+				q = pivothedge.v1.coord
+				compare_hedges = v.hedgelist[1:]
 
-							try:
-								print('twin', h.twin, h.twin.newface)
-							except:
-								pass
-
-				v.hedgelist[0].nexthedge = v.hedgelist[1].twin
-				print('cur',v.hedgelist[0])
-				print('next',v.hedgelist[0].nexthedge)
-
-				v.hedgelist[1].twin.prevhedge = v.hedgelist[0]
+				#v.hedgelist[0].nexthedge = v.hedgelist[1].twin
+				#print('cur',v.hedgelist[0])
+				#print('next',v.hedgelist[0].nexthedge)
+#
+				#v.hedgelist[1].twin.prevhedge = v.hedgelist[0]
 
 				#if len(v.hedgelist) == 2 or len(v.hedgelist) == 3:
-
-				twin = False
-				link_hedge = v.hedgelist[0]
-				if v.hedgelist[-1]== True:
-					try:
-						comparesite = v.hedgelist[2].newface.site
-					except:
-						comparesite = v.hedgelist[2].twin.newface.site
-						twin = True
-					site1 = siteClose(comparesite, close_site, v.hedgelist[0])
-					
-					A = v.hedgelist[0].vertices[0].coord 
-					B = v.hedgelist[0].vertices[1].coord
-					print(v.hedgelist[0])
-					print('minDistance site 1', minDistance(A, B, site1),  site1)
-					print('minDistance comparesite', minDistance(
-						A, B, comparesite),  comparesite)
-					if minDistance(A, B, site1) < minDistance(A, B, comparesite):
-						link_hedge = v.hedgelist[1]
-					
-				if not twin:
-					link_hedge.twin.prevhedge = v.hedgelist[2]
-					v.hedgelist[2].nexthedge = link_hedge.twin
-					print('cur', v.hedgelist[2])
-					print('next', v.hedgelist[2].nexthedge)
-				else:
-					v.hedgelist[2].twin.prevhedge = link_hedge
-					link_hedge.nexthedge = v.hedgelist[2].twin
-					print('cur', link_hedge)
-					print('next', link_hedge.nexthedge)
+				for h in compare_hedges:
+					r = h.v1.coord
+					if ccw(p, q, r) <0:
+						left = h
+						print('left', left)
+					else:
+						right = h 
+						print('right', right)
 				
-				if len(v.hedgelist) ==4:
-					v.hedgelist.pop()
-						
-						
+				pivothedge.nexthedge = left.twin
+				left.twin.prevhedge = pivothedge
+
+				print('cur', pivothedge)
+				print('next', pivothedge.nexthedge)
+
+				p = right.origin.coord 
+				q = right.v1.coord 
+				r = left.v1.coord 
+				if ccw(p, q, r) > 0:
+					right.twin.prevhedge = left
+					left.nexthedge = right.twin
+					print('cur', left)
+					print('next', left.nexthedge)
+				else:
+					right.nexthedge = pivothedge.twin
+					pivothedge.twin.prevhedge = right
+					print('cur', right)
+					print('next', right.nexthedge)
+
+
+				
 						
 				#else:
 				#	v.hedgelist.pop()
@@ -846,6 +807,16 @@ def angle(v1, v2):
 	cos = dot(v1, v2)/(v1_norm*v2_norm)
 	return np.arccos(cos)
 
+#cross product
+
+def cross(v1, v2):
+	return v1.x*v2.y - v2.x*v1.y
+
+#return true if the point r is on the left side of pq
+
+def ccw(p, q, r):
+	return cross(toVec(p, q), toVec(p, r))
+	
 def is_right(h1, h2):
 	right = False
 	v1 = toVec(h1.v1.coord, h1.origin.coord)
