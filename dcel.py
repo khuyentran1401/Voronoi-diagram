@@ -310,6 +310,7 @@ class Dcel(Xygraph):
 					if h.v1 == intersected_hed.v1 or h.v1 == intersected_hed.origin:
 						to_compare.append(h)
 
+
 				deletehedge = todelete_hedge(
 					to_compare[0], to_compare[1], close_site)
 				delete_hedges.append(deletehedge)
@@ -441,9 +442,11 @@ class Dcel(Xygraph):
 				#v.hedgelist[1].twin.prevhedge = v.hedgelist[0]
 
 				#if len(v.hedgelist) == 2 or len(v.hedgelist) == 3:
+				eps = 10e-3
 				for h in compare_hedges:
 					r = h.v1.coord
-					if ccw(p, q, r) <0:
+					print('ccw', ccw(p, q, r), pivothedge, h)
+					if ccw(p, q, r) <0 and np.abs(ccw(p, q, r)) > eps:
 						left = h
 						print('left', left)
 					else:
@@ -459,7 +462,8 @@ class Dcel(Xygraph):
 				p = right.origin.coord 
 				q = right.v1.coord 
 				r = left.v1.coord 
-				if ccw(p, q, r) > 0:
+				
+				if ccw(p, q, r) > 0 and np.abs(ccw(p, q, r)) > eps:
 					right.twin.prevhedge = left
 					left.nexthedge = right.twin
 					print('cur', left)
@@ -815,6 +819,7 @@ def cross(v1, v2):
 #return true if the point r is on the left side of pq
 
 def ccw(p, q, r):
+
 	return cross(toVec(p, q), toVec(p, r))
 	
 def is_right(h1, h2):
