@@ -22,39 +22,61 @@ class Vertex:
 	def sortincident(self):
 		self.hedgelist.sort(key=lambda h: h.angle)
 
-	def sortthree(self, h1, new_site, close_site):
-		
+	def sortthree(self, new_site, close_site, h1=None):
+			
+		nonrelevant = None
+		if not h1:
+			for h in self.hedgelist:
+				site = siteClose(new_site, close_site, h)
+				print('new face',h,  h.newface)
+				if h.newface != None and h.newface.site != site:
+					print('non relevant edge', h)
+					nonrelevant = h
+					self.hedgelist.remove(nonrelevant)
+			if nonrelevant == None:
+				for h in self.hedgelist:
+					site = siteClose(new_site, close_site, h.twin)
+					print('new face', h.twin,  h.twin.newface)
+					if h.twin.newface != None and h.twin.newface.site != site:
+						print('non relevant edge', h)
+						nonrelevant = h
+						self.hedgelist.remove(nonrelevant)
 
-		if h1 not in self.hedgelist:
-			h1 = h1.twin
-		print(h1)
-		self.hedgelist.remove(h1)
+					
+		else:
+			if h1 not in self.hedgelist:
+				h1 = h1.twin
+			print(h1)
+			self.hedgelist.remove(h1)
+
 		compare_hedge = self.hedgelist[:]
 
 		# Determines if a point is to the right of a hedge
-		belong = siteBelong(new_site, close_site,
-					  self.hedgelist[0], self.hedgelist[1])
-		non_relevant_hedge = False
+		
 		
 		for i, h in enumerate(compare_hedge):
-			site = belong[h]
+			site = siteClose(new_site, close_site, h)
 			#if h.newface == None or h.newface.site == site:
-    			
+				
 			if not lefton(h, site):
 				print('right', h)
+				print('twin', h.twin)
 				print('face', h.newface)
 				right = h
 				self.hedgelist.remove(h)
-			#else:
-			#	print('non_relevant_hedge', h)
-			#	print('face', h.newface)
-			#	non_relevant_hedge = True
-    		
-
-		self.hedgelist.insert(0, h1)
-		self.hedgelist.insert(1, right)
-		if non_relevant_hedge:
-			self.hedgelist.append(non_relevant_hedge)
+			
+				#	
+				
+		if h1:
+			self.hedgelist.insert(0, h1)
+			self.hedgelist.insert(1, right)
+		else:
+			self.hedgelist.append(right)
+			self.hedgelist.append(nonrelevant)
+			self.hedgelist.append(True)
+		
+		#if non_relevant_hedge:
+		#	self.hedgelist.append(non_relevant_hedge)
 
 		#self.hedgelist[1:].sort(key=lambda h: h.angle)
 
@@ -427,16 +449,25 @@ class Dcel(Xygraph):
 
 			else:
 				# Handle the new intersect vertices
-
+				#handle_three = True
 				if v in intersect_vl:
 					for h in v.hedgelist:
 						print(h)
 
-					v.sortthree(hb1, new_site, close_site)
+					v.sortthree(new_site, close_site, hb1)
 				else:
+					#handle_three = False
 					for h in v.hedgelist:
 						if h in new_hedges:
-							v.sortthree(h, new_site, close_site)
+							v.sortthree(new_site, close_site)
+					print('After sort')
+					for h in v.hedgelist:
+							print(h)
+
+							try:
+								print('twin', h.twin, h.twin.newface)
+							except:
+								pass
 
 				v.hedgelist[0].nexthedge = v.hedgelist[1].twin
 				print('cur',v.hedgelist[0])
@@ -445,10 +476,42 @@ class Dcel(Xygraph):
 				v.hedgelist[1].twin.prevhedge = v.hedgelist[0]
 
 				#if len(v.hedgelist) == 2 or len(v.hedgelist) == 3:
-				v.hedgelist[0].twin.prevhedge = v.hedgelist[2]
-				v.hedgelist[2].nexthedge = v.hedgelist[0].twin
-				print('cur', v.hedgelist[2])
-				print('next', v.hedgelist[2].nexthedge)
+
+				twin = False
+				link_hedge = v.hedgelist[0]
+				if v.hedgelist[-1]== True:
+					try:
+						comparesite = v.hedgelist[2].newface.site
+					except:
+						comparesite = v.hedgelist[2].twin.newface.site
+						twin = True
+					site1 = siteClose(comparesite, close_site, v.hedgelist[0])
+					
+					A = v.hedgelist[0].vertices[0].coord 
+					B = v.hedgelist[0].vertices[1].coord
+					print(v.hedgelist[0])
+					print('minDistance site 1', minDistance(A, B, site1),  site1)
+					print('minDistance comparesite', minDistance(
+						A, B, comparesite),  comparesite)
+					if minDistance(A, B, site1) < minDistance(A, B, comparesite):
+						link_hedge = v.hedgelist[1]
+					
+				if not twin:
+					link_hedge.twin.prevhedge = v.hedgelist[2]
+					v.hedgelist[2].nexthedge = link_hedge.twin
+					print('cur', v.hedgelist[2])
+					print('next', v.hedgelist[2].nexthedge)
+				else:
+					v.hedgelist[2].twin.prevhedge = link_hedge
+					link_hedge.nexthedge = v.hedgelist[2].twin
+					print('cur', link_hedge)
+					print('next', link_hedge.nexthedge)
+				
+				if len(v.hedgelist) ==4:
+					v.hedgelist.pop()
+						
+						
+						
 				#else:
 				#	v.hedgelist.pop()
 
@@ -658,6 +721,14 @@ def minDistance(A, B, E):
 
 	return reqAns
 
+def siteClose(site1, site2, hedge):
+
+	A = hedge.vertices[0].coord
+	B = hedge.vertices[1].coord
+	if minDistance(A, B, site1) < minDistance(A, B, site2):
+		return site1 
+	else:
+		return site2
 
 def siteBelong(site1, site2, hedge1, hedge2):
 
