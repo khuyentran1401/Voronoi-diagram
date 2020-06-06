@@ -147,7 +147,12 @@ def voronoid(points):
 
 
 if __name__ == '__main__':
-    points = [(0, 1), (1, 8), (2, 3), (1, 3), (9, 0)]
+    points = [(1, 8), (9, 0), (9, 4)]
+    #np.random.seed(10)
+    #points = np.random.randint(0, 10, (5, 2))
+    #points = [(x[0], x[1]) for x in points]
+
+
     
     voronoid(points)
 

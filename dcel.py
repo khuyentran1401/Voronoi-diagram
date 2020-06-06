@@ -280,6 +280,7 @@ class Dcel(Xygraph):
 		for v in intersect_vl:
 			if v != intersected_ver:
 				self.vertices.append(v)
+				handle_vertex = v
 
 			update_vertices.append(v)
 
@@ -312,7 +313,7 @@ class Dcel(Xygraph):
 
 
 				deletehedge = todelete_hedge(
-					to_compare[0], to_compare[1], close_site)
+					to_compare[0], to_compare[1], handle_vertex.coord)
 				delete_hedges.append(deletehedge)
 
 				# Link between the last hedge to the new cut hedge
@@ -436,9 +437,7 @@ class Dcel(Xygraph):
 					for h in v.hedgelist:
 						if h in new_hedges:
 							v.sortthree(new_site, close_site)
-				print('After sort')
-				for h in v.hedgelist:
-					print(h)
+				
 				pivothedge = v.hedgelist[0]
 				print('pivothedge', pivothedge)
 				p = pivothedge.origin.coord
@@ -452,16 +451,24 @@ class Dcel(Xygraph):
 				#v.hedgelist[1].twin.prevhedge = v.hedgelist[0]
 
 				#if len(v.hedgelist) == 2 or len(v.hedgelist) == 3:
+
 				eps = 10e-3
+				minAngle = float('inf')
+				
 				for h in compare_hedges:
 					r = h.v1.coord
 					print('ccw', ccw(p, q, r), pivothedge, h)
-					if ccw(p, q, r) <0 and np.abs(ccw(p, q, r)) > eps:
+					if ccw(p, q, r) < 0 and ccw(p, q, r) < minAngle:
 						left = h
-						print('left', left)
+						minAngle = ccw(p, q, r)
+					
+  			
 					else:
 						right = h 
 						print('right', right)
+				print('left', left)
+				
+				
 				
 				pivothedge.nexthedge = left.twin
 				left.twin.prevhedge = pivothedge
@@ -476,12 +483,18 @@ class Dcel(Xygraph):
 				if ccw(p, q, r) > 0 and np.abs(ccw(p, q, r)) > eps:
 					right.twin.prevhedge = left
 					left.nexthedge = right.twin
-					print('cur', left)
+					print('left cur', left)
 					print('next', left.nexthedge)
+
+					right.nexthedge = pivothedge.twin
+					pivothedge.twin.prevhedge = right 
+					print('cur', right)
+					print('next', right.nexthedge)
+
 				else:
 					right.nexthedge = pivothedge.twin
 					pivothedge.twin.prevhedge = right
-					print('cur', right)
+					print('right cur', right)
 					print('next', right.nexthedge)
 
 
@@ -523,7 +536,7 @@ class Dcel(Xygraph):
 			f.vertices.append(h.origin)
 
 			i = 0 
-			while (not h.nexthedge is f.wedge):
+			while (not h.nexthedge is f.wedge) and i <7:
 
 				h = h.nexthedge
 				f.vertices.append(h.origin)
@@ -738,10 +751,10 @@ def siteBelong(site1, site2, hedge1, hedge2):
 def todelete_hedge(hedge1, hedge2, point):
 
 	if minDistance(hedge1.v1.coord, hedge1.origin.coord, point) < minDistance(hedge2.v1.coord, hedge2.origin.coord, point):
-		return hedge2
+		return hedge1
 
 	else:
-		return hedge1
+		return hedge2
 
 
 def isborder(border, hedge):
