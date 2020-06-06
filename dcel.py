@@ -5,6 +5,8 @@ from bisector import *
 from line_intersection import *
 import math as m
 import numpy as np
+from itertools import permutations
+
 
 
 class DcelError(Exception):
@@ -20,11 +22,13 @@ class Vertex:
 		self.hedgelist = []
 
 	def sortincident(self):
+		#print('angle', h.angle)
 		self.hedgelist.sort(key=lambda h: h.angle)
 
-	def sortthree(self, h1, new_site, close_site):
-		
 
+	def sortthree(self, new_site, close_site):
+		
+		'''
 		if h1 not in self.hedgelist:
 			h1 = h1.twin
 		print(h1)
@@ -39,7 +43,7 @@ class Vertex:
 		for i, h in enumerate(compare_hedge):
 			site = belong[h]
 			#if h.newface == None or h.newface.site == site:
-    			
+				
 			if not lefton(h, site):
 				print('right', h)
 				print('face', h.newface)
@@ -49,7 +53,7 @@ class Vertex:
 			#	print('non_relevant_hedge', h)
 			#	print('face', h.newface)
 			#	non_relevant_hedge = True
-    		
+			
 
 		self.hedgelist.insert(0, h1)
 		self.hedgelist.insert(1, right)
@@ -57,6 +61,21 @@ class Vertex:
 			self.hedgelist.append(non_relevant_hedge)
 
 		#self.hedgelist[1:].sort(key=lambda h: h.angle)
+		'''
+		middle = find_middle(self.hedgelist)
+		self.hedgelist.remove(middle)
+		print('middle', middle)
+		updatehedge = self.hedgelist[:]
+		direction = find_direction(self.hedgelist, middle)
+		for h in updatehedge:
+			if h.v1 == direction.origin:
+				right = h
+				print('right', right)
+				self.hedgelist.remove(h)
+		
+		self.hedgelist.insert(0, right)
+		self.hedgelist.insert(1, middle)
+			
 
 	def __str__(self):
 		return '({}, {})'.format(self.x, self.y)
@@ -428,25 +447,36 @@ class Dcel(Xygraph):
 			else:
 				# Handle the new intersect vertices
 
-				if v in intersect_vl:
-					for h in v.hedgelist:
-						print(h)
+				#if v in intersect_vl:
+				for h in v.hedgelist:
+					print(h)
 
-					v.sortthree(hb1, new_site, close_site)
-				else:
-					for h in v.hedgelist:
-						if h in new_hedges:
-							v.sortthree(h, new_site, close_site)
+				v.sortthree(new_site, close_site)
 
-				v.hedgelist[0].nexthedge = v.hedgelist[1].twin
-				print('cur',v.hedgelist[0])
-				print('next',v.hedgelist[0].nexthedge)
+				print('after sorting')
+				for h in v.hedgelist:
+					print(h)
+					#v.sortthree(hb1, new_site, close_site)
+				#else:
+				#	for h in v.hedgelist:
+				#		#if h in new_hedges:
+				#				
+				#			v.sortincident()
+				#			print('after sorting')
+				#			for h in v.hedgelist:
+				#				print(h)
 
-				v.hedgelist[1].twin.prevhedge = v.hedgelist[0]
+							#v.sortthree(h, new_site, close_site)
+
+				v.hedgelist[1].nexthedge = v.hedgelist[0].twin
+				print('cur',v.hedgelist[1])
+				print('next',v.hedgelist[1].nexthedge)
+
+				v.hedgelist[0].twin.prevhedge = v.hedgelist[1]
 
 				#if len(v.hedgelist) == 2 or len(v.hedgelist) == 3:
-				v.hedgelist[0].twin.prevhedge = v.hedgelist[2]
-				v.hedgelist[2].nexthedge = v.hedgelist[0].twin
+				v.hedgelist[1].twin.prevhedge = v.hedgelist[2]
+				v.hedgelist[2].nexthedge = v.hedgelist[1].twin
 				print('cur', v.hedgelist[2])
 				print('next', v.hedgelist[2].nexthedge)
 				#else:
@@ -770,6 +800,7 @@ def norm(v):
 
 
 def angle(v1, v2):
+	'''Sort hedge by the angle with respect to vector 2'''
 	v1_norm = norm(v1)
 	v2_norm = norm(v2)
 	cos = dot(v1, v2)/(v1_norm*v2_norm)
@@ -784,6 +815,58 @@ def is_right(h1, h2):
 	if dotprod > 0:
 		right = True 
 	return right
+
+def is_parallel(h1, h2):
+	parallel = False 
+	#v1 = toVec(h1.origin.coord, h1.v1.coord)
+	#v2 = toVec(h2.v1.coord, h2.origin.coord)
+	#dotprod = dot(v1, v2)
+	#print(dotprod)
+	#if dotprod == 0:
+	#	parallel = True 
+	print(h1)
+	m1 = slope(h1.v1.coord, h1.origin.coord)
+	print('m1',m1)
+	print(h2)
+	m2 = slope(h2.v1.coord, h2.origin.coord)
+	print('m2', m2)
+	if m1 == m2:
+		parallel = True
+
+	return parallel
+
+def find_middle(hedgelist):
+	
+	perms = list(permutations(hedgelist))
+
+	for i, perm in enumerate(perms):
+		if is_parallel(perm[0], perm[1]):
+			print('parallel', perm[0], perm[1])
+			middle = perm[2]
+			break 
+
+	return middle
+
+def find_direction(hedgelist, middle):
+
+	not_middle = [h for h in hedgelist if h != middle]
+	origin = not_middle[0].v1 
+	tail = not_middle[1].v1
+	test_hedge1 = Hedge(tail, origin)
+	test_hedge2 = Hedge(origin, tail)
+	test_hedge1.twin = test_hedge2
+	test_hedge2.twin = test_hedge1
+
+	if lefton(test_hedge1, middle.v1.coord):
+		return test_hedge1 
+
+	else:
+		return test_hedge2
+
+	
+		
+		
+
 			
 			
 	
