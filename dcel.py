@@ -406,6 +406,17 @@ class Dcel(Xygraph):
 				horigin2.twin = horigin1
 				print('htail1', htail1, 'horigin1', horigin1)
 
+				if head and tail:
+					htail1.nexthedge = head.nexthedge 
+					head.nexthedge.prevhedge = htail1 
+					print('cur', htail1)
+					print('next', htail1.nexthedge)
+
+					horigin1.prevhedge = tail.prevhedge
+					tail.prevhedge.nexthedge = horigin1
+					print('cur', tail.prevhedge)
+					print('next', tail.prevhedge.nexthedge)
+
 				if htail1.origin not in update_vertices:
 					update_vertices.append(htail1.origin)
 
