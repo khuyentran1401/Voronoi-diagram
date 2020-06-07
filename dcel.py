@@ -643,13 +643,14 @@ class Dcel(Xygraph):
 
 						newhedge = Hedge(tail.v1, head.origin)
 						newhedge.nexthedge = head.nexthedge 
-						head.prevhedge = newhedge 
+						head.nexthedge.prevhedge = newhedge 
 						print('cur', newhedge)
 						print('next', newhedge.nexthedge)
 
 						newhedge.prevhedge = tail.prevhedge
-						tail.nexthedge = newhedge
-						print('prev', newhedge.prevhedge)
+						tail.prevhedge.nexthedge = newhedge
+						print('cur', newhedge.prevhedge)
+						print('next', newhedge)
 						
 						newhedge.newface = f
 						f.hedges.append(newhedge)
