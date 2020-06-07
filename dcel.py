@@ -252,7 +252,7 @@ class Dcel(Xygraph):
 
 						pt = intersection(
 							p1, q1, h.vertices[0].coord, h.vertices[1].coord)
-						if abs(pt[0] - ver.coord[0])/abs(pt[0]) < 10e-2 and abs(pt[1] - ver.coord[1])/abs(pt[1]) < 10e-2:
+						if abs(pt[0] - ver.coord[0])/abs(pt[0]) < eps and abs(pt[1] - ver.coord[1])/abs(pt[1]) < eps:
 							vertex = ver
 							h = hed.twin
 
