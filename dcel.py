@@ -306,10 +306,10 @@ class Dcel(Xygraph):
 		delete_hedges = []
 		head, tail = None, None
 		newface_hedges = []
+		merge_hedge1 = None
 		for i, v in enumerate(intersect_vl):
 			print(i, v)
 
-			merge_hedge1 = None
 			if intersected_hed and intersect_edges[v] == intersected_hed:
 	
 				print('intersected hed', intersected_hed)
