@@ -422,7 +422,7 @@ class Dcel(Xygraph):
 				horigin2.twin = horigin1
 				print('htail1', htail1, 'horigin1', horigin1)
 
-				if head and tail:
+				if head and tail and isOnLine(head.v1.coord, htail1):
 					htail1.nexthedge = head.nexthedge 
 					head.nexthedge.prevhedge = htail1 
 					print('cur', htail1)
@@ -543,7 +543,7 @@ class Dcel(Xygraph):
 				if ccw(p, q, r) > 0 and np.abs(ccw(p, q, r)) > eps:
 					right.twin.prevhedge = left
 					left.nexthedge = right.twin
-					print('left cur', left)
+					print('cur', left)
 					print('next', left.nexthedge)
 
 					right.nexthedge = pivothedge.twin
@@ -554,7 +554,7 @@ class Dcel(Xygraph):
 				else:
 					right.nexthedge = pivothedge.twin
 					pivothedge.twin.prevhedge = right
-					print('right cur', right)
+					print('cur', right)
 					print('next', right.nexthedge)
 
 
@@ -620,8 +620,8 @@ class Dcel(Xygraph):
 				i += 1
 			
 			if i == 10:
+				print('Equal 10')
 				for key, value in linkheges.items():
-					print(key, len(value))
 					if len(value) == 2:
 
 						head = value[0]
@@ -653,8 +653,18 @@ class Dcel(Xygraph):
 						
 						newhedge.newface = f
 						f.hedges.append(newhedge)
+
+						if f.wedge == head or f.wedge == tail:
+							f.wedge = newhedge
+						
 						
 						break
+			
+				h = f.wedge
+				print('cur', f.wedge)
+				while h.nexthedge != f.wedge:
+					h = h.nexthedge 
+					print('next',h)
 						
 
     				
