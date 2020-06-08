@@ -25,57 +25,28 @@ class Vertex:
 		#print('angle', h.angle)
 		self.hedgelist.sort(key=lambda h: h.angle)
 
-
-	def sortthree(self, new_site, close_site):
-		
-		'''
-		if h1 not in self.hedgelist:
-			h1 = h1.twin
+	def sortthree(self, new_site, close_site, h1=None):
+		if h1:
+			if h1 not in self.hedgelist:
+				h1 = h1.twin
 		print(h1)
-		self.hedgelist.remove(h1)
+		
 		compare_hedge = self.hedgelist[:]
+		if h1:
+			compare_hedge.remove(h1)
 
 		# Determines if a point is to the right of a hedge
-		belong = siteBelong(new_site, close_site,
-					  self.hedgelist[0], self.hedgelist[1])
-		non_relevant_hedge = False
+		
 		
 		for i, h in enumerate(compare_hedge):
-			site = belong[h]
+			site = siteClose(new_site, close_site, h)
 			#if h.newface == None or h.newface.site == site:
 				
-			if not lefton(h, site):
-				print('right', h)
-				print('face', h.newface)
-				right = h
+			if  lefton(h, site):
 				self.hedgelist.remove(h)
-			#else:
-			#	print('non_relevant_hedge', h)
-			#	print('face', h.newface)
-			#	non_relevant_hedge = True
+				self.hedgelist.insert(0, h)
 			
-
-		self.hedgelist.insert(0, h1)
-		self.hedgelist.insert(1, right)
-		if non_relevant_hedge:
-			self.hedgelist.append(non_relevant_hedge)
-
-		#self.hedgelist[1:].sort(key=lambda h: h.angle)
-		'''
-		middle = find_middle(self.hedgelist)
-		self.hedgelist.remove(middle)
-		print('middle', middle)
-		updatehedge = self.hedgelist[:]
-		direction = find_direction(self.hedgelist, middle)
-		for h in updatehedge:
-			if h.v1 == direction.origin:
-				right = h
-				print('right', right)
-				self.hedgelist.remove(h)
-		
-		self.hedgelist.insert(0, right)
-		self.hedgelist.insert(1, middle)
-			
+				
 
 	def __str__(self):
 		return '({}, {})'.format(self.x, self.y)
@@ -254,14 +225,18 @@ class Dcel(Xygraph):
 	def update(self, new_site, close_site, intersect_vl, intersect_edges, xmin, xmax, ymin, ymax):
 
 
-		update_hedges = self.two_points_update(new_site, close_site,
+		ignore, update_hedges = self.two_points_update(new_site, close_site,
 											   intersect_vl, intersect_edges)
+
 
 		
 		# If the intersect hedges are not the border, we will continue draw the bisector
+		num_update = 1
 		while update_hedges:
 			# Check this
+			num_update += 1
 			for ver, hed in update_hedges.items():
+				print(ver, hed)
 
 				# Draw another bisector
 				newface_close = hed.twin.newface
@@ -282,7 +257,7 @@ class Dcel(Xygraph):
 
 						pt = intersection(
 							p1, q1, h.vertices[0].coord, h.vertices[1].coord)
-						if abs(pt[0] - ver.coord[0])/abs(pt[0]) < 10e-2 and abs(pt[1] - ver.coord[1])/abs(pt[1]) < 10e-2:
+						if abs(pt[0] - ver.coord[0])/max(abs(pt[0]),1) < eps and abs(pt[1] - ver.coord[1])/max(abs(pt[1]),1) < eps:
 							vertex = ver
 							h = hed.twin
 
@@ -302,16 +277,18 @@ class Dcel(Xygraph):
 						print('intersection', vertex.coord)
 						print('intersect hedge', h)
 
-				update_hedges = self.two_points_update(p, pc,
-													   intersect_vl, intersect_edges, ver, hed.twin)
-
-	def two_points_update(self, new_site, close_site, intersect_vl, intersect_edges, intersected_ver=None, intersected_hed=None):
+				ignore, update_hedges = self.two_points_update(p, pc,
+													   intersect_vl, intersect_edges, ver, hed.twin, num_update, ignore)
+				
+	def two_points_update(self, new_site, close_site, intersect_vl, intersect_edges, intersected_ver=None, intersected_hed=None, num_update=None, ignoreface=False):
 		update_vertices = []
 
 		# Update vertex list
-		for v in intersect_vl:
+		for v in intersect_vl:	
+			#Handle old vertex
 			if v != intersected_ver:
 				self.vertices.append(v)
+				handle_vertex = v
 
 			update_vertices.append(v)
 
@@ -334,53 +311,108 @@ class Dcel(Xygraph):
 		delete_hedges = []
 		head, tail = None, None
 		newface_hedges = []
+		merge_hedge1 = None
+		deletever = None
+		mergevertex = False
 		for i, v in enumerate(intersect_vl):
+			print(i, v)
 
 			if intersected_hed and intersect_edges[v] == intersected_hed:
+	
+				print('intersected hed', intersected_hed)
 				to_compare = []
 				for h in v.hedgelist:
 					if h.v1 == intersected_hed.v1 or h.v1 == intersected_hed.origin:
 						to_compare.append(h)
-
+						print('to compare', h)
+		
 				deletehedge = todelete_hedge(
-					to_compare[0], to_compare[1], close_site)
+					to_compare[0], to_compare[1], handle_vertex.coord)
 				delete_hedges.append(deletehedge)
+
+				# Link between the last hedge to the new cut hedge
+				for h in to_compare:
+					if h != deletehedge:
+						intersected_hed.prevhedge.nexthedge = h 
+						h.prevhedge = intersected_hed.prevhedge
+						print('cur', intersected_hed.prevhedge)
+						print('next', intersected_hed.prevhedge.nexthedge)
+
+
 				for ver in deletehedge.vertices:
+					if ver != intersected_ver:
+						print('delete ver', ver)
+						deletever = ver 
+						
+					
 					if ver != v:
-						self.vertices.remove(ver)
+						try:
+							self.vertices.remove(ver)
+						except:
+							pass
+						
 
 				print('delete', deletehedge)
-				print('head', deletehedge.twin.nexthedge)
-				print('tail', deletehedge.prevhedge)
-				head = deletehedge.twin.nexthedge
-				tail = deletehedge.prevhedge
+				print('test', deletehedge.twin.nexthedge)
+				
 
-				merge_hedge1 = Hedge(tail.v1, head.origin)
-				merge_hedge2 = Hedge(head.origin, tail.v1)
-				merge_hedge1.twin = merge_hedge2
-				merge_hedge2.twin = merge_hedge1
-				print('new hedge', merge_hedge1)
-				print('twin', merge_hedge2)
+				if ignoreface and i == 0:
+					ignoreface = False
+					mergevertex = True
+					continue
+				
 
-				head.origin.hedgelist.remove(head)
-				head.origin.hedgelist.append(merge_hedge1)
-				tail.v1.hedgelist.remove(tail.twin)
-				tail.v1.hedgelist.append(merge_hedge1.twin)
+				if isborder(self.border, intersect_edges[intersect_vl[1]]) or isborder(self.border, deletehedge.twin.nexthedge) or isborder(self.border, intersected_hed.nexthedge):
+			
+					if isborder(self.border, deletehedge.twin.nexthedge) or isborder(self.border, deletehedge.nexthedge):
+						print('head', deletehedge.twin.nexthedge)
+						print('tail', deletehedge.prevhedge)
+						head = deletehedge.twin.nexthedge
+						tail = deletehedge.prevhedge
+						print('head1', intersected_hed.nexthedge.nexthedge)
+					
+					elif num_update >= 3 and isborder(self.border, intersect_edges[intersect_vl[1]]):
+						print('iam here')
+						change_edge = intersected_hed.nexthedge
+						head = change_edge.nexthedge 
+						tail = change_edge.twin.prevhedge
+						print('head', head)
+						print('tail',tail)
 
-				head.nexthedge.prevhedge = merge_hedge1
-				merge_hedge1.nexthedge = head.nexthedge
+					merge_hedge1 = Hedge(tail.v1, head.origin)
+					merge_hedge2 = Hedge(head.origin, tail.v1)
+					merge_hedge1.twin = merge_hedge2
+					merge_hedge2.twin = merge_hedge1
+					print('new hedge', merge_hedge1)
+					print('twin', merge_hedge2)
 
-				print('cur', merge_hedge1)
-				print('next', merge_hedge1.nexthedge)
+					head.origin.hedgelist.remove(head)
+					head.origin.hedgelist.append(merge_hedge1)
+					tail.v1.hedgelist.remove(tail.twin)
+					tail.v1.hedgelist.append(merge_hedge1.twin)
 
-				tail.prevhedge.nexthedge = merge_hedge1
-				merge_hedge1.prevhedge = tail.prevhedge
-				print('prev', merge_hedge1.prevhedge)
+					head.nexthedge.prevhedge = merge_hedge1
+					merge_hedge1.nexthedge = head.nexthedge
+
+					print('cur', merge_hedge1)
+					print('next', merge_hedge1.nexthedge)
+
+					tail.prevhedge.nexthedge = merge_hedge1
+					merge_hedge1.prevhedge = tail.prevhedge
+					print('prev', merge_hedge1.prevhedge)
+
+					if num_update >= 3 and isborder(self.border, intersect_edges[intersect_vl[1]]):
+						intersect_edges[intersect_vl[1]] = merge_hedge1
+					
+				else:
+					ignoreface = True
+				
 
 			else:
 				# Append the new merge point to the intersect if the old hedge is on the intersect hedge
-				if head == intersect_edges[v] or tail == intersect_edges[v]:
-					intersect_edges[v] = merge_hedge1
+				if merge_hedge1:
+					if head == intersect_edges[v] or tail == intersect_edges[v]:
+						intersect_edges[v] = merge_hedge1
 
 				htail1, htail2, horigin1, horigin2 = split_hedge(
 					v, intersect_edges[v])
@@ -393,10 +425,22 @@ class Dcel(Xygraph):
 				horigin2.twin = horigin1
 				print('htail1', htail1, 'horigin1', horigin1)
 
-				if htail1.origin not in update_vertices:
+				if head and tail and isOnLine(head.v1.coord, htail1):
+					print('update link')
+					htail1.nexthedge = head.nexthedge 
+					head.nexthedge.prevhedge = htail1 
+					print('cur', htail1)
+					print('next', htail1.nexthedge)
+
+					horigin1.prevhedge = tail.prevhedge
+					tail.prevhedge.nexthedge = horigin1
+					print('cur', tail.prevhedge)
+					print('next', tail.prevhedge.nexthedge)
+
+				if htail1.origin not in update_vertices and htail1.origin != deletever:
 					update_vertices.append(htail1.origin)
 
-				if horigin1.v1 not in update_vertices:
+				if horigin1.v1 not in update_vertices and horigin1.v1 != deletever:
 					update_vertices.append(horigin1.v1)
 
 				new_hedges += ([htail1, htail2, horigin1, horigin2])
@@ -433,6 +477,7 @@ class Dcel(Xygraph):
 				belong = siteBelong(new_site, close_site,
 									v.hedgelist[0], v.hedgelist[1])
 				for h in v.hedgelist:
+					print(h)
 					site = belong[h]
 					#Fix here
 					if lefton(h, site):
@@ -446,39 +491,80 @@ class Dcel(Xygraph):
 
 			else:
 				# Handle the new intersect vertices
+				if v in intersect_vl:
+					for h in v.hedgelist:
+						print(h)
 
-				#if v in intersect_vl:
-				for h in v.hedgelist:
-					print(h)
+						v.sortthree(new_site, close_site, hb1)
+				else:
+					#if mergevertex:
+						
+					for h in v.hedgelist:
+						if h in new_hedges:
+							v.sortthree(new_site, close_site)
+				
+				pivothedge = v.hedgelist[0]
+				print('pivothedge', pivothedge)
+				p = pivothedge.origin.coord
+				q = pivothedge.v1.coord
+				compare_hedges = v.hedgelist[1:]
 
-				v.sortthree(new_site, close_site)
-
-				print('after sorting')
-				for h in v.hedgelist:
-					print(h)
-					#v.sortthree(hb1, new_site, close_site)
-				#else:
-				#	for h in v.hedgelist:
-				#		#if h in new_hedges:
-				#				
-				#			v.sortincident()
-				#			print('after sorting')
-				#			for h in v.hedgelist:
-				#				print(h)
-
-							#v.sortthree(h, new_site, close_site)
-
-				v.hedgelist[1].nexthedge = v.hedgelist[0].twin
-				print('cur',v.hedgelist[1])
-				print('next',v.hedgelist[1].nexthedge)
-
-				v.hedgelist[0].twin.prevhedge = v.hedgelist[1]
+				#v.hedgelist[0].nexthedge = v.hedgelist[1].twin
+				#print('cur',v.hedgelist[0])
+				#print('next',v.hedgelist[0].nexthedge)
+#
+				#v.hedgelist[1].twin.prevhedge = v.hedgelist[0]
 
 				#if len(v.hedgelist) == 2 or len(v.hedgelist) == 3:
-				v.hedgelist[1].twin.prevhedge = v.hedgelist[2]
-				v.hedgelist[2].nexthedge = v.hedgelist[1].twin
-				print('cur', v.hedgelist[2])
-				print('next', v.hedgelist[2].nexthedge)
+
+				eps = 10e-3
+				minAngle = float('inf')
+				
+				for h in compare_hedges:
+					r = h.v1.coord
+					print('ccw', ccw(p, q, r), pivothedge, h)
+					if ccw(p, q, r) < 0 and ccw(p, q, r) < minAngle:
+						left = h
+						minAngle = ccw(p, q, r)
+					
+  			
+					else:
+						right = h 
+						print('right', right)
+				print('left', left)
+				
+				
+				
+				pivothedge.nexthedge = left.twin
+				left.twin.prevhedge = pivothedge
+
+				print('cur', pivothedge)
+				print('next', pivothedge.nexthedge)
+
+				p = right.origin.coord 
+				q = right.v1.coord 
+				r = left.v1.coord 
+				
+				if ccw(p, q, r) > 0 and np.abs(ccw(p, q, r)) > eps:
+					right.twin.prevhedge = left
+					left.nexthedge = right.twin
+					print('cur', left)
+					print('next', left.nexthedge)
+
+					right.nexthedge = pivothedge.twin
+					pivothedge.twin.prevhedge = right 
+					print('cur', right)
+					print('next', right.nexthedge)
+
+				else:
+					right.nexthedge = pivothedge.twin
+					pivothedge.twin.prevhedge = right
+					print('cur', right)
+					print('next', right.nexthedge)
+
+
+				
+						
 				#else:
 				#	v.hedgelist.pop()
 
@@ -495,8 +581,11 @@ class Dcel(Xygraph):
 			if site == close_site:
 				f = self.faces[site]
 				f.hedges = []
+				
 
 			else:
+				if ignoreface:
+					continue
 				# If this is a new site, create a new newface for that site
 				f = Face(site=site)
 				self.faces[f.site] = f
@@ -513,21 +602,106 @@ class Dcel(Xygraph):
 
 			print(h)
 			f.vertices.append(h.origin)
+			linkheges = {h.v1: [h]}
 
 			i = 0 
-			while (not h.nexthedge is f.wedge) and i <7:
-
+			
+			while (not h.nexthedge is f.wedge) and i<10:
+			
 				h = h.nexthedge
 				f.vertices.append(h.origin)
-
 				f.hedges.append(h)
+
+				if mergevertex:
+					if h.v1 in linkheges:
+						if h not in linkheges[h.v1]:
+							linkheges[h.v1].append(h)
+					else:
+						linkheges[h.v1] = [h]
+
+
 				print('next:', h)
 				h.newface = f
 				i += 1
+			
+			if i == 10:
+				print('Equal 10')
+				for key, value in linkheges.items():
+					
+					if len(value) == 2:
 
+						head = value[0]
+						tail = value[1]
+
+
+						if head.prevhedge.twin != tail:
+							head = value[1]
+							tail = value[0]
+
+						
+						f.vertices.remove(key)
+						f.vertices.remove(tail.origin)
+						
+						
+						
+						f.hedges.remove(head)
+						f.hedges.remove(tail)
+
+						tail= tail.prevhedge 
+						print('head', head)
+						print('tail', tail)
+
+						newhedge1 = Hedge(tail.v1, head.origin)
+						newhedge2 = Hedge(head.origin, tail.v1)
+						newhedge1.twin = newhedge2
+						newhedge2.twin = newhedge1
+						
+						newhedge1.nexthedge = head.nexthedge 
+						head.nexthedge.prevhedge = newhedge1 
+						print('cur', newhedge1)
+						print('next', newhedge1.nexthedge)
+
+						newhedge1.prevhedge = tail.prevhedge
+						tail.prevhedge.nexthedge = newhedge1
+						print('cur', newhedge1.prevhedge)
+						print('next', newhedge1)
+						
+						newhedge1.newface = f
+						f.hedges.append(newhedge1)
+
+						
+						f.vertices[f.vertices.index(tail.v1)].hedgelist.remove(tail.twin)
+						f.vertices[f.vertices.index(tail.v1)].hedgelist.append(newhedge1.twin)
+						print('remove',tail.twin)
+						print('append', newhedge1.twin)
+
+
+						f.vertices[f.vertices.index(head.origin)].hedgelist.remove(head)
+						f.vertices[f.vertices.index(head.origin)].hedgelist.append(newhedge1)
+
+						if f.wedge == head or f.wedge == tail:
+							f.wedge = newhedge1
+						
+						
+						break
+			
+				h = f.wedge
+				print('cur', f.wedge)
+				i = 0 
+				while h.nexthedge != f.wedge and i <7:
+					h = h.nexthedge 
+					print('next',h)
+					i += 1
+				f.hedges = list(set(f.hedges))
+				f.vertices = list(set(f.vertices))
+						
+
+    				
+
+			
 		# Return the hedge that is not the border
 
-		return {v: h for v, h in intersect_edges.items() if not isborder(self.border, h) and h != intersected_hed}
+		return ignoreface, {v: h for v, h in intersect_edges.items() if not isborder(self.border, h) and h != intersected_hed}
 	def findpoints(self, pl, onetoone=False):
 		"""Given a list of points pl, returns a list of
 		with the corresponding newface each point belongs to and
@@ -688,6 +862,14 @@ def minDistance(A, B, E):
 
 	return reqAns
 
+def siteClose(site1, site2, hedge):
+
+	A = hedge.vertices[0].coord
+	B = hedge.vertices[1].coord
+	if minDistance(A, B, site1) < minDistance(A, B, site2):
+		return site1 
+	else:
+		return site2
 
 def siteBelong(site1, site2, hedge1, hedge2):
 
@@ -722,10 +904,10 @@ def siteBelong(site1, site2, hedge1, hedge2):
 def todelete_hedge(hedge1, hedge2, point):
 
 	if minDistance(hedge1.v1.coord, hedge1.origin.coord, point) < minDistance(hedge2.v1.coord, hedge2.origin.coord, point):
-		return hedge2
+		return hedge1
 
 	else:
-		return hedge1
+		return hedge2
 
 
 def isborder(border, hedge):
@@ -806,6 +988,17 @@ def angle(v1, v2):
 	cos = dot(v1, v2)/(v1_norm*v2_norm)
 	return np.arccos(cos)
 
+#cross product
+
+def cross(v1, v2):
+	return v1.x*v2.y - v2.x*v1.y
+
+#return true if the point r is on the left side of pq
+
+def ccw(p, q, r):
+
+	return cross(toVec(p, q), toVec(p, r))
+	
 def is_right(h1, h2):
 	right = False
 	v1 = toVec(h1.v1.coord, h1.origin.coord)

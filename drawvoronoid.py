@@ -1,64 +1,78 @@
 import numpy as np
+from voronoid import *
+from drawvoronoid import *
 
-def voronoi_finite_polygons_2d(points, vertices, ridge_points, ridge_vertices, regions, point_region,  radius=None):
-    """Reconstruct infinite Voronoi regions in a
-    2D diagram to finite regions.
-    Source:
-    [https://stackoverflow.com/a/20678647/1595060](https://stackoverflow.com/a/20678647/1595060)
-    """
-    if points.shape[1] != 2:
-        raise ValueError("Requires 2D input")
+
+# decorater used to block function printing to the console
+def blockPrinting(func):
+    def func_wrapper(*args, **kwargs):
+        # block all printing to the console
+        sys.stdout = open(os.devnull, 'w')
+        # call the method in question
+        value = func(*args, **kwargs)
+        # enable all printing to the console
+        sys.stdout = sys.__stdout__
+        # pass the return value of the method back
+        return value
+
+    return func_wrapper
+
+
+@blockPrinting
+def findRegion(points, xmin=None, xmax=None, ymin=None, ymax=None):
     new_regions = []
-    new_vertices = vertices.tolist()
-    center = points.mean(axis=0)
-    if radius is None:
-        radius = points.ptp().max()
-    # Construct a map containing all ridges for a
-    # given point
-    all_ridges = {}
-    for (p1, p2), (v1, v2) in zip(ridge_points,
-                                  ridge_vertices):
-        all_ridges.setdefault(
-            p1, []).append((p2, v1, v2))
-        all_ridges.setdefault(
-            p2, []).append((p1, v1, v2))
-    # Reconstruct infinite regions
-    for p1, region in enumerate(point_region):
-        vertices = regions[region]
-        if all(v >= 0 for v in vertices):
-            # finite region
-            new_regions.append(vertices)
-            continue
-        # reconstruct a non-finite region
-        ridges = all_ridges[p1]
-        new_region = [v for v in vertices if v >= 0]
-        for p2, v1, v2 in ridges:
-            if v2 < 0:
-                v1, v2 = v2, v1
-            if v1 >= 0:
-                # finite ridge: already in the region
-                continue
-            # Compute the missing endpoint of an
-            # infinite ridge
-            t = points[p2] - \
-                points[p1]  # tangent
-            t /= np.linalg.norm(t)
-            n = np.array([-t[1], t[0]])  # normal
-            midpoint = points[[p1, p2]]. \
-                mean(axis=0)
-            direction = np.sign(
-                np.dot(midpoint - center, n)) * n
-            far_point = vertices[v2] + \
-                direction * radius
-            new_region.append(len(new_vertices))
-            new_vertices.append(far_point.tolist())
-        # Sort region counterclockwise.
-        vs = np.asarray([new_vertices[v]
-                         for v in new_region])
-        c = vs.mean(axis=0)
-        angles = np.arctan2(
-            vs[:, 1] - c[1], vs[:, 0] - c[0])
-        new_region = np.array(new_region)[
-            np.argsort(angles)]
-        new_regions.append(new_region.tolist())
-    return new_regions, np.asarray(new_vertices)
+    xmin, xmax, ymin, ymax, finalpoints, regions = voronoid(
+        points, xmin, xmax, ymin, ymax)
+    regions = np.asarray(regions)
+    for region in regions:
+        region = np.asarray(region)
+        c = region.mean(axis=0)
+        angles = np.arctan2(region[:, 1] - c[1], region[:, 0] - c[0])
+        region = np.array(region)[np.argsort(angles)]
+        #polygon = vertices[region]
+        new_regions.append(region)
+    print(new_regions)
+
+    return new_regions, finalpoints, xmin, xmax, ymin, ymax
+
+
+def plotVoronoi(points, xmin=None, xmax=None, ymin=None, ymax=None):
+    regions, finalpoints, xmin, xmax, ymin, ymax = findRegion(
+        points, xmin, xmax, ymin, ymax)
+    for region in regions:
+        plt.fill(*zip(*region), alpha=0.4)
+        for ver in region:
+            plt.annotate('({:.2f},{:.2f})'.format(
+                ver[0], ver[1]), (ver[0], ver[1]))
+    for p in finalpoints:
+        plt.annotate('({:.2f},{:.2f})'.format(p[0], p[1]), (p[0], p[1]))
+
+    plt.plot(finalpoints[:, 0], finalpoints[:, 1], 'ko')
+    #for p in finalpoints:
+    #    plt.annotate('({:.2f},{:.2f})'.format(p[0],p[1]), (p[0],p[1]))
+    plt.xlim(xmin - 0.1, xmax + 0.1)
+    plt.ylim(ymin - 0.1, ymax + 0.1)
+
+    plt.show()
+
+if __name__=='__main':
+    np.random.seed(11)
+    points = np.random.randint(0, 10, (5, 2))
+    points = [(x[0], x[1]) for x in points]
+    #points = [(0, 1), (1, 8), (9, 0), (9, 4), (10, 10)]
+    #n = len(points)
+    points = list(set(points))
+
+    xygraph = Xygraph(vl=points)
+    xmin = xygraph.xmin - 1
+    ymin = xygraph.ymin - 1
+    v = (xmin, ymin)
+    points.sort(key=lambda p: ((p[0]-v[0])**2 +
+                            (p[1]-v[1])**2)**(1/2), reverse=True)
+    cur_points = []
+
+    for i in range(n):
+        print(cur_points)
+        cur_points.append(points.pop())
+        plotVoronoi(cur_points, -1, 13, -1, 11)
+    
