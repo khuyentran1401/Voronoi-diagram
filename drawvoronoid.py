@@ -1,6 +1,8 @@
 import numpy as np
 from voronoid import *
 from drawvoronoid import *
+import os 
+import sys
 
 
 # decorater used to block function printing to the console
@@ -31,7 +33,6 @@ def findRegion(points, xmin=None, xmax=None, ymin=None, ymax=None):
         region = np.array(region)[np.argsort(angles)]
         #polygon = vertices[region]
         new_regions.append(region)
-    print(new_regions)
 
     return new_regions, finalpoints, xmin, xmax, ymin, ymax
 
@@ -48,6 +49,7 @@ def plotVoronoi(points, xmin=None, xmax=None, ymin=None, ymax=None):
         plt.annotate('({:.2f},{:.2f})'.format(p[0], p[1]), (p[0], p[1]))
 
     plt.plot(finalpoints[:, 0], finalpoints[:, 1], 'ko')
+    fig = plt.gcf()
     #for p in finalpoints:
     #    plt.annotate('({:.2f},{:.2f})'.format(p[0],p[1]), (p[0],p[1]))
     plt.xlim(xmin - 0.1, xmax + 0.1)
@@ -72,7 +74,8 @@ if __name__=='__main':
     cur_points = []
 
     for i in range(n):
-        print(cur_points)
         cur_points.append(points.pop())
         plotVoronoi(cur_points, -1, 13, -1, 11)
+
+    
     

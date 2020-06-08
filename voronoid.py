@@ -38,17 +38,14 @@ def voronoid(points, xmin=None, xmax=None, ymin=None, ymax=None):
 
     points.sort(key=lambda p: ((p[0]-v[0])**2 +
                                (p[1]-v[1])**2)**(1/2), reverse=True)
-    print('points', points)
 
     # Points displayed
     cur_points = []
 
     p = points.pop()
 
-    print('New point', p)
     cur_points.append(p)
     cur_points = cur_points
-    print('border', xmin, xmax, ymin, ymax)
 
     V = Dcel(vl=[(xmin, ymax), (xmin, ymin), (xmax, ymin), (xmax, ymax)], el=[
              (0, 1), (1, 2), (2, 3), (3, 0)], site=p, border=[xmin, xmax, ymin, ymax])
@@ -57,12 +54,9 @@ def voronoid(points, xmin=None, xmax=None, ymin=None, ymax=None):
 
     for i in range(n-1):
 
-        print('\n')
-        print('i', i)
-
+        
         p = points.pop()
 
-        print('New point', p)
         cur_points.append(p)
         # Closest site to the new site p_i+1
         nbrs = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(
@@ -75,7 +69,6 @@ def voronoid(points, xmin=None, xmax=None, ymin=None, ymax=None):
         fn = V.getFace(pc)
 
         p1, q1 = perpendicular_bisector(p, pc, xmin, xmax, ymin, ymax)
-        print('Point closest', pc)
 
         intersect_vl = []
         intersect_edges = {}
@@ -121,9 +114,7 @@ def voronoid(points, xmin=None, xmax=None, ymin=None, ymax=None):
                 vertex = Vertex(pt[0], pt[1])
 
                 intersect_vl.append(vertex)
-                print('intersect vertex', vertex)
                 intersect_edges[vertex] = h
-                print('intersect hedge', h)
 
         V.update(p, pc, intersect_vl, intersect_edges, xmin, xmax, ymin, ymax)
   
@@ -134,7 +125,6 @@ def voronoid(points, xmin=None, xmax=None, ymin=None, ymax=None):
             try:
                 region.append(v.coord)
             except:
-                print(v.coord)
                 pass
         
         regions.append(list(set(region)))
