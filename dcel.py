@@ -423,6 +423,7 @@ class Dcel(Xygraph):
 				print('htail1', htail1, 'horigin1', horigin1)
 
 				if head and tail and isOnLine(head.v1.coord, htail1):
+					print('update link')
 					htail1.nexthedge = head.nexthedge 
 					head.nexthedge.prevhedge = htail1 
 					print('cur', htail1)
@@ -473,6 +474,7 @@ class Dcel(Xygraph):
 				belong = siteBelong(new_site, close_site,
 									v.hedgelist[0], v.hedgelist[1])
 				for h in v.hedgelist:
+					print(h)
 					site = belong[h]
 					#Fix here
 					if lefton(h, site):
@@ -622,6 +624,7 @@ class Dcel(Xygraph):
 			if i == 10:
 				print('Equal 10')
 				for key, value in linkheges.items():
+					
 					if len(value) == 2:
 
 						head = value[0]
@@ -636,36 +639,58 @@ class Dcel(Xygraph):
 						f.vertices.remove(key)
 						f.vertices.remove(tail.origin)
 						
+						
+						
 						f.hedges.remove(head)
 						f.hedges.remove(tail)
 
 						tail= tail.prevhedge 
+						print('head', head)
+						print('tail', tail)
 
-						newhedge = Hedge(tail.v1, head.origin)
-						newhedge.nexthedge = head.nexthedge 
-						head.nexthedge.prevhedge = newhedge 
-						print('cur', newhedge)
-						print('next', newhedge.nexthedge)
-
-						newhedge.prevhedge = tail.prevhedge
-						tail.prevhedge.nexthedge = newhedge
-						print('cur', newhedge.prevhedge)
-						print('next', newhedge)
+						newhedge1 = Hedge(tail.v1, head.origin)
+						newhedge2 = Hedge(head.origin, tail.v1)
+						newhedge1.twin = newhedge2
+						newhedge2.twin = newhedge1
 						
-						newhedge.newface = f
-						f.hedges.append(newhedge)
+						newhedge1.nexthedge = head.nexthedge 
+						head.nexthedge.prevhedge = newhedge1 
+						print('cur', newhedge1)
+						print('next', newhedge1.nexthedge)
+
+						newhedge1.prevhedge = tail.prevhedge
+						tail.prevhedge.nexthedge = newhedge1
+						print('cur', newhedge1.prevhedge)
+						print('next', newhedge1)
+						
+						newhedge1.newface = f
+						f.hedges.append(newhedge1)
+
+						
+						f.vertices[f.vertices.index(tail.v1)].hedgelist.remove(tail.twin)
+						f.vertices[f.vertices.index(tail.v1)].hedgelist.append(newhedge1.twin)
+						print('remove',tail.twin)
+						print('append', newhedge1.twin)
+
+
+						f.vertices[f.vertices.index(head.origin)].hedgelist.remove(head)
+						f.vertices[f.vertices.index(head.origin)].hedgelist.append(newhedge1)
 
 						if f.wedge == head or f.wedge == tail:
-							f.wedge = newhedge
+							f.wedge = newhedge1
 						
 						
 						break
 			
 				h = f.wedge
 				print('cur', f.wedge)
-				while h.nexthedge != f.wedge:
+				i = 0 
+				while h.nexthedge != f.wedge and i <7:
 					h = h.nexthedge 
 					print('next',h)
+					i += 1
+				f.hedges = list(set(f.hedges))
+				f.vertices = list(set(f.vertices))
 						
 
     				

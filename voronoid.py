@@ -18,13 +18,15 @@ from PIL import Image, ImageDraw
 
 
 
-def voronoid(points):
+def voronoid(points, xmin=None, xmax=None, ymin=None, ymax=None):
 
-    xygraph = Xygraph(vl=points)
-    xmin = xygraph.xmin - 1
-    xmax = xygraph.xmax + 3
-    ymin = xygraph.ymin - 1
-    ymax = xygraph.ymax + 1
+    if xmin==None:
+
+        xygraph = Xygraph(vl=points)
+        xmin = xygraph.xmin - 1
+        xmax = xygraph.xmax + 3
+        ymin = xygraph.ymin - 1
+        ymax = xygraph.ymax + 1
 
 
     # Ensure there is no points in the same location
@@ -147,7 +149,7 @@ def voronoid(points):
 
 
 if __name__ == '__main__':
-    points = [(0, 1), (1, 8), (9, 0), (9, 4)]
+    points = [(0, 1), (1, 8), (9, 0), (9, 4), (10, 10)]
     #np.random.seed(10)
     #points = np.random.randint(0, 10, (5, 2))
     #points = [(x[0], x[1]) for x in points]
