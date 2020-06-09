@@ -19,3 +19,4 @@ from drawvoronoid import plotVoronoi
 points = [(0, 1), (1, 8), (9, 0), (9, 4), (10, 10)]
 plotVoronoi(points, -1, 13, -1, 11)
 ```
+![image](https://github.com/khuyentran1401/Voronoi-diagram/blob/master/Screenshot%20from%202020-06-08%2023-31-46.png)
