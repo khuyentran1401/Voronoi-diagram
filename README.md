@@ -9,3 +9,13 @@ Implementation of voronoi diagram with incremental algorithm
 * [voronoid.py](/voronoid.py): Initalize the double connected edgelist and add new points
 * [drawvoronoid.py](/drawvoronoid.py): Draw the voronoi diagram
 * [plot.ipynb](/plot.ipynb): Import and visualize the datapoints
+
+## How to Import and Run the Algorithm
+To try out this algorithm with your data points, run
+```python
+from voronoid import Xygraph
+from drawvoronoid import plotVoronoi
+
+points = [(0, 1), (1, 8), (9, 0), (9, 4), (10, 10)]
+plotVoronoi(points, -1, 13, -1, 11)
+```
