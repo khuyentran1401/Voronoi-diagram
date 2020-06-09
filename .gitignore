@@ -1,4 +1,5 @@
 experiments.ipynb
+.ipynb_checkpoints
 *.png
 *.jpg
 test.py
