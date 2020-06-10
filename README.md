@@ -10,7 +10,7 @@ Implementation of voronoi diagram with incremental algorithm
 * [voronoid.py](/voronoid.py): Initalize the double connected edgelist and add new points
 * [drawvoronoid.py](/drawvoronoid.py): Draw the voronoi diagram
 * [plot.ipynb](/plot.ipynb): Import and visualize the datapoints
-* [hospital.ipynb](/hospital.ipynb): Extract latitudes and longitudes of hospitals from the map then visualize them with Voronoi
+* [Hospital.ipynb](/Hospital.ipynb): Extract latitudes and longitudes of hospitals from the map then visualize them with Voronoi
 
 ## How to Import and Run the Algorithm
 To try out this algorithm with your data points, run
