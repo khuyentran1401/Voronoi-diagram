@@ -1,8 +1,9 @@
 # Voronoi-diagram
 Implementation of voronoi diagram with incremental algorithm
 ## Description of files
-* [bisector.py](/bisector.py): Define how to create the bisector and the functions realated to it
-* [xygraph.py](/xygraph.py): Create the empty frame for the initial dcel
+* [line_intersection.py[(/line_intersection.py): Determine whether 2 lines intersect
+* [bisector.py](/bisector.py): Define how to create the bisector and the functions realated to it such as finding intersection
+* [xygraph.py](/xygraph.py): Create the empty frame for the initial double connected edgelist
 * [dcel.py](/dcel.py): 
   * Double connected edge list implemetation
   * Update new points
